@@ -24,8 +24,11 @@ class Config:
         self.SESSION3 = getenv("SESSION3", None)
         self.ASSISTANT_SESSION_FILE = getenv("ASSISTANT_SESSION_FILE", "assistant_session.txt")
 
-        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "")
-        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "")
+        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/Yeagrists")
+        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/+EQU89uJVa_5mNjY1")
+        self.RANDOM_MESSAGES = getenv("RANDOM_MESSAGES", "True").lower() == "true"
+        self.RANDOM_MESSAGE_MIN = int(getenv("RANDOM_MESSAGE_MIN", 3600))
+        self.RANDOM_MESSAGE_MAX = int(getenv("RANDOM_MESSAGE_MAX", 7200))
 
         self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", "False").lower() == "true"
         self.AUTO_END: bool = getenv("AUTO_END", "False").lower() == "true"

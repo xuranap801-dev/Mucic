@@ -80,6 +80,19 @@ class MongoDB:
         """Delete the persisted owner-generated assistant session."""
         await self.assistantdb.delete_one({"_id": "owner_session"})
 
+    async def save_command_media(self, command: str, media_type: str, file_id: str) -> None:
+        await self.cache.update_one(
+            {"_id": f"media:{command}"},
+            {"$set": {"command": command, "media_type": media_type, "file_id": file_id}},
+            upsert=True,
+        )
+
+    async def get_command_media(self, command: str):
+        return await self.cache.find_one({"_id": f"media:{command}"})
+
+    async def delete_command_media(self, command: str) -> None:
+        await self.cache.delete_one({"_id": f"media:{command}"})
+
     # CACHE
     async def get_call(self, chat_id: int) -> bool:
         return chat_id in self.active_calls

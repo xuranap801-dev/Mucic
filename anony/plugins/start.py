@@ -36,13 +36,19 @@ async def start(_, message: types.Message):
     )
 
     key = buttons.start_key(message.lang, private)
+    custom = await db.get_command_media("start")
     try:
-        await message.reply_photo(
-            photo=config.START_IMG,
-            caption=_text,
-            reply_markup=key,
-            quote=not private,
-        )
+        if custom and custom.get("media_type") == "photo":
+            await message.reply_photo(custom["file_id"], caption=_text, reply_markup=key, quote=not private)
+        elif custom and custom.get("media_type") == "video":
+            await message.reply_video(custom["file_id"], caption=_text, reply_markup=key, quote=not private)
+        elif custom and custom.get("media_type") == "animation":
+            await message.reply_animation(custom["file_id"], caption=_text, reply_markup=key, quote=not private)
+        elif custom and custom.get("media_type") == "sticker":
+            await message.reply_sticker(custom["file_id"], quote=not private)
+            await message.reply_text(_text, reply_markup=key, quote=not private)
+        else:
+            await message.reply_photo(photo=config.START_IMG, caption=_text, reply_markup=key, quote=not private)
     except Exception:
         await message.reply_text(_text, reply_markup=key, quote=not private)
 

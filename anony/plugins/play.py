@@ -36,6 +36,19 @@ async def play_hndlr(
     url: str = None,
 ) -> None:
     sent = await m.reply_text(m.lang["play_searching"])
+    custom = await db.get_command_media("play")
+    if custom:
+        try:
+            if custom.get("media_type") == "photo":
+                await app.send_photo(m.chat.id, custom["file_id"])
+            elif custom.get("media_type") == "video":
+                await app.send_video(m.chat.id, custom["file_id"])
+            elif custom.get("media_type") == "animation":
+                await app.send_animation(m.chat.id, custom["file_id"])
+            elif custom.get("media_type") == "sticker":
+                await app.send_sticker(m.chat.id, custom["file_id"])
+        except Exception:
+            pass
     file = None
     mention = m.from_user.mention
     media = tg.get_media(m.reply_to_message) if m.reply_to_message else None

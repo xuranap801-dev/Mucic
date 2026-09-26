@@ -23,6 +23,7 @@ from anony import anon, app, boot, config, db, lang, queue, userbot
 
 PAGE_SIZE = 8
 pending_assistant_auth: dict[int, dict] = {}
+pending_media: dict[int, str] = {}
 
 
 def _panel_markup() -> types.InlineKeyboardMarkup:
@@ -34,6 +35,7 @@ def _panel_markup() -> types.InlineKeyboardMarkup:
             [b("Blacklist", callback_data="owner blacklist"), b("Assistants", callback_data="owner assistants")],
             [b("Active voice chats", callback_data="owner active"), b("Health", callback_data="owner health")],
             [b("Message previews", callback_data="owner previews")],
+            [b("Media settings", callback_data="owner media")],
             [b("Refresh", callback_data="owner home"), b("Close", callback_data="owner close")],
         ]
     )
@@ -461,6 +463,26 @@ async def owner_callbacks(_, query: types.CallbackQuery):
             "The phone, OTP, and optional 2FA password are used only in memory and are deleted after processing."
         )
         return await query.answer("Send the assistant phone number")
+    if action == "media":
+        buttons = types.InlineKeyboardMarkup([
+            [types.InlineKeyboardButton("Start", callback_data="owner media_start"),
+             types.InlineKeyboardButton("Help", callback_data="owner media_help")],
+            [types.InlineKeyboardButton("Play", callback_data="owner media_play"),
+             types.InlineKeyboardButton("Queue", callback_data="owner media_queue")],
+            [types.InlineKeyboardButton("Dashboard", callback_data="owner media_dashboard"),
+             types.InlineKeyboardButton("Games", callback_data="owner media_games")],
+            [types.InlineKeyboardButton("Ping", callback_data="owner media_ping"),
+             types.InlineKeyboardButton("Back", callback_data="owner home")],
+            [types.InlineKeyboardButton("Back", callback_data="owner home")],
+        ])
+        return await query.edit_message_text(
+            "<b>Media settings</b>\n\nChoose a command, then send one photo, video, GIF, or sticker.",
+            reply_markup=buttons,
+        )
+    if action.startswith("media_"):
+        command = action[6:]
+        pending_media[query.from_user.id] = command
+        return await query.answer(f"Now send media for /{command}", show_alert=True)
 
 
 @app.on_callback_query(filters.regex(r"^owner") & ~filters.user(app.owner))
@@ -537,3 +559,23 @@ async def assistant_auth_messages(_, message: types.Message):
             except Exception:
                 pass
         await app.send_message(owner_id, "Session generation failed. No credentials were saved.")
+
+
+@app.on_message(
+    (filters.private & (filters.photo | filters.video | filters.animation | filters.sticker))
+    & filters.user(app.owner)
+)
+async def owner_media_message(_, message: types.Message):
+    command = pending_media.pop(message.from_user.id, None)
+    if not command:
+        return
+    if message.photo:
+        media_type, file_id = "photo", message.photo.file_id
+    elif message.video:
+        media_type, file_id = "video", message.video.file_id
+    elif message.animation:
+        media_type, file_id = "animation", message.animation.file_id
+    else:
+        media_type, file_id = "sticker", message.sticker.file_id
+    await db.save_command_media(command, media_type, file_id)
+    await message.reply_text(f"✅ /{command} media saved as {media_type}.")

@@ -12,7 +12,8 @@ from contextlib import suppress
 from aiohttp import web
 
 from anony import (anon, app, config, db, logger,
-                   stop, thumb, userbot, yt)
+                   stop, tasks, thumb, userbot, yt)
+from anony.core.ambient import ambient_messages_loop
 from anony.plugins import all_modules
 
 
@@ -59,6 +60,9 @@ async def main():
 
     if config.COOKIES_URL:
         await yt.save_cookies(config.COOKIES_URL)
+
+    if config.RANDOM_MESSAGES:
+        tasks.append(asyncio.create_task(ambient_messages_loop()))
 
     sudoers = await db.get_sudoers()
     app.sudoers.update(sudoers)
