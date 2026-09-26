@@ -13,6 +13,13 @@ from anony.helpers import utils
 
 def checkUB(play):
     async def wrapper(_, m: types.Message):
+        logger.info(
+            "PLAY_RECEIVED chat=%s type=%s user=%s command=%s",
+            getattr(m.chat, "id", None),
+            getattr(m.chat, "type", None),
+            getattr(m.from_user, "id", None),
+            getattr(m, "command", None),
+        )
         if not m.from_user:
             return await m.reply_text(m.lang["play_user_invalid"])
 
@@ -49,7 +56,9 @@ def checkUB(play):
                 return await m.reply_text(m.lang["play_admin"])
 
         if chat_id not in db.active_calls:
+            logger.info("PLAY_ASSISTANT_LOOKUP chat=%s", chat_id)
             client = await db.get_client(chat_id)
+            logger.info("PLAY_ASSISTANT_READY chat=%s client=%s", chat_id, getattr(client, "id", None))
             try:
                 member = await app.get_chat_member(chat_id, client.id)
                 if member.status in [
@@ -121,6 +130,7 @@ def checkUB(play):
             except Exception:
                 pass
 
+        logger.info("PLAY_HANDLER_ENTER chat=%s", chat_id)
         return await play(_, m, force, m3u8, video, url)
 
     return wrapper
