@@ -143,6 +143,11 @@ async def play_hndlr(
                 return await sent.edit_text(
                     "❌ Tʀᴀᴄᴋ ᴅᴏᴡɴʟᴏᴀᴅ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try another song or URL."
                 )
+            if not file.file_path and "sign in to confirm" in yt.last_error.lower():
+                return await sent.edit_text(
+                    "❌ YᴏᴜTᴜʙᴇ ʙʟᴏᴄᴋᴇᴅ ᴛʜɪs ᴅᴏᴡɴʟᴏᴀᴅ.\n\n"
+                    "Owner: add a valid Netscape cookies.txt file URL in Render as <code>COOKIES_URL</code>, then redeploy."
+                )
 
     await anon.play_media(chat_id=m.chat.id, message=sent, media=file)
     if not tracks:

@@ -25,6 +25,7 @@ class YouTube:
         self.checked = False
         self.cookie_dir = "anony/cookies"
         self.warned = False
+        self.last_error = ""
         self.regex = re.compile(
             r"(https?://)?(www\.|m\.|music\.)?"
             r"(youtube\.com/(watch\?v=|shorts/|playlist\?list=)|youtu\.be/)"
@@ -54,7 +55,7 @@ class YouTube:
         async with aiohttp.ClientSession() as session:
             for url in urls:
                 name = url.split("/")[-1]
-                link = "https://batbin.me/raw/" + name
+                link = url if url.startswith(("http://", "https://")) else "https://batbin.me/raw/" + name
                 async with session.get(link) as resp:
                     resp.raise_for_status()
                     with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
@@ -112,6 +113,7 @@ class YouTube:
         return tracks
 
     async def download(self, video_id: str, video: bool = False) -> str | None:
+        self.last_error = ""
         url = self.base + video_id
         ext = "mp4" if video else "webm"
         filename = f"downloads/{video_id}.{ext}"
@@ -149,9 +151,12 @@ class YouTube:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
                     ydl.download([url])
-                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError) as ex:
+                    self.last_error = str(ex)
+                    logger.warning("Download failed: %s", ex)
                     return None
                 except Exception as ex:
+                    self.last_error = str(ex)
                     logger.warning("Download failed: %s", ex)
                     return None
             candidates = [p for p in glob.glob(f"downloads/{video_id}.*") if not p.endswith(('.part', '.ytdl'))]
