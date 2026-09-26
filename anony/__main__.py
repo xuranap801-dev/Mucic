@@ -6,7 +6,10 @@
 import asyncio
 import signal
 import importlib
+import os
 from contextlib import suppress
+
+from aiohttp import web
 
 from anony import (anon, app, config, db, logger,
                    stop, thumb, userbot, yt)
@@ -22,7 +25,24 @@ async def idle():
             loop.add_signal_handler(sig, stop_event.set)
     await stop_event.wait()
 
+
+async def _health(_request):
+    return web.json_response({"status": "ok", "service": config.BOT_NAME})
+
+
+async def start_health_server():
+    application = web.Application()
+    application.router.add_get("/", _health)
+    application.router.add_get("/health", _health)
+    runner = web.AppRunner(application)
+    await runner.setup()
+    port = int(os.getenv("PORT", "10000"))
+    await web.TCPSite(runner, "0.0.0.0", port).start()
+    logger.info(f"Health server listening on 0.0.0.0:{port}")
+    return runner
+
 async def main():
+    health_runner = await start_health_server()
     await db.connect()
     await app.boot()
     await userbot.boot()
@@ -46,6 +66,7 @@ async def main():
     logger.info(f"Loaded {len(app.sudoers)} sudo users.")
 
     await idle()
+    await health_runner.cleanup()
     asyncio.create_task(stop())
 
 
