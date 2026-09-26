@@ -65,9 +65,12 @@ async def play_hndlr(
     elif url:
         if "playlist" in url:
             await sent.edit_text(m.lang["playlist_fetch"])
-            tracks = await yt.playlist(
-                config.PLAYLIST_LIMIT, mention, url, video
-            )
+            try:
+                tracks = await asyncio.wait_for(
+                    yt.playlist(config.PLAYLIST_LIMIT, mention, url, video), timeout=45
+                )
+            except asyncio.TimeoutError:
+                return await sent.edit_text("❌ Pʟᴀʏʟɪsᴛ ʀᴇǫᴜᴇsᴛ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try one song.")
 
             if not tracks:
                 return await sent.edit_text(m.lang["playlist_error"])
@@ -76,7 +79,10 @@ async def play_hndlr(
             tracks.remove(file)
             file.message_id = sent.id
         else:
-            file = await yt.search(url, sent.id, video=video)
+            try:
+                file = await asyncio.wait_for(yt.search(url, sent.id, video=video), timeout=30)
+            except asyncio.TimeoutError:
+                return await sent.edit_text("❌ YᴏᴜTᴜʙᴇ sᴇᴀʀᴄʜ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try again.")
 
         if not file:
             return await sent.edit_text(
@@ -85,7 +91,10 @@ async def play_hndlr(
 
     elif len(m.command) >= 2:
         query = " ".join(m.command[1:])
-        file = await yt.search(query, sent.id, video=video)
+        try:
+            file = await asyncio.wait_for(yt.search(query, sent.id, video=video), timeout=30)
+        except asyncio.TimeoutError:
+            return await sent.edit_text("❌ YᴏᴜTᴜʙᴇ sᴇᴀʀᴄʜ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try again.")
         if not file:
             return await sent.edit_text(
                 m.lang["play_not_found"].format(config.SUPPORT_CHAT)

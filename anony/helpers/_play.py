@@ -51,7 +51,9 @@ def checkUB(play):
         if chat_id not in db.active_calls:
             client = await db.get_client(chat_id)
             try:
-                member = await app.get_chat_member(chat_id, client.id)
+                member = await asyncio.wait_for(
+                    app.get_chat_member(chat_id, client.id), timeout=15
+                )
                 if member.status in [
                     enums.ChatMemberStatus.BANNED,
                     enums.ChatMemberStatus.RESTRICTED,
@@ -75,14 +77,16 @@ def checkUB(play):
                 if m.chat.username:
                     invite_link = m.chat.username
                     try:
-                        await client.resolve_peer(invite_link)
+                        await asyncio.wait_for(client.resolve_peer(invite_link), timeout=15)
                     except Exception:
                         pass
                 else:
                     try:
-                        invite_link = (await app.get_chat(chat_id)).invite_link
+                        invite_link = (await asyncio.wait_for(app.get_chat(chat_id), timeout=15)).invite_link
                         if not invite_link:
-                            invite_link = await app.export_chat_invite_link(chat_id)
+                            invite_link = await asyncio.wait_for(
+                                app.export_chat_invite_link(chat_id), timeout=15
+                            )
                     except errors.ChatAdminRequired:
                         return await m.reply_text(m.lang["admin_required"])
                     except Exception as ex:
@@ -93,7 +97,7 @@ def checkUB(play):
                 umm = await m.reply_text(m.lang["play_invite"].format(app.name))
                 await asyncio.sleep(2)
                 try:
-                    await client.join_chat(invite_link)
+                    await asyncio.wait_for(client.join_chat(invite_link), timeout=30)
                 except errors.UserAlreadyParticipant:
                     pass
                 except errors.InviteRequestSent:
@@ -113,7 +117,7 @@ def checkUB(play):
                     )
 
                 await umm.delete()
-                await client.resolve_peer(chat_id)
+                await asyncio.wait_for(client.resolve_peer(chat_id), timeout=15)
 
         if await db.get_cmd_delete(chat_id):
             try:
