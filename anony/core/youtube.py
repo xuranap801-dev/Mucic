@@ -10,6 +10,7 @@ import random
 import asyncio
 import aiohttp
 import glob
+import base64
 from pathlib import Path
 
 from py_yt import Playlist, VideosSearch
@@ -60,7 +61,19 @@ class YouTube:
                     resp.raise_for_status()
                     with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
                         fw.write(await resp.read())
-        logger.info(f"Cookies saved in {self.cookie_dir}.")
+        logger.info("Cookies saved in {self.cookie_dir}.")
+
+    async def save_cookies_b64(self, value: str) -> None:
+        try:
+            os.makedirs(self.cookie_dir, exist_ok=True)
+            path = f"{self.cookie_dir}/render.txt"
+            with open(path, "wb") as cookie_file:
+                cookie_file.write(base64.b64decode(value, validate=True))
+            self.cookies = []
+            self.checked = False
+            logger.info("Loaded YouTube cookies from secure environment secret.")
+        except Exception as ex:
+            logger.warning("Unable to decode COOKIES_B64: %s", ex)
 
     def valid(self, url: str) -> bool:
         return bool(re.match(self.regex, url))

@@ -58,7 +58,9 @@ async def main():
         importlib.import_module(f"anony.plugins.{module}")
     logger.info(f"Loaded {len(all_modules)} modules.")
 
-    if config.COOKIES_URL:
+    if config.COOKIES_B64:
+        await yt.save_cookies_b64(config.COOKIES_B64)
+    elif config.COOKIES_URL:
         await yt.save_cookies(config.COOKIES_URL)
 
     if config.RANDOM_MESSAGES:
