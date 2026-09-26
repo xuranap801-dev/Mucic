@@ -9,6 +9,7 @@ import yt_dlp
 import random
 import asyncio
 import aiohttp
+import glob
 from pathlib import Path
 
 from py_yt import Playlist, VideosSearch
@@ -127,22 +128,24 @@ class YouTube:
             "no_warnings": True,
             "overwrites": False,
             "nocheckcertificate": True,
-            "cookiefile": cookie,
+            **({"cookiefile": cookie} if cookie else {}),
+            "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
         }
 
         if video:
             ydl_opts = {
                 **base_opts,
-                "format": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio)",
+                "format": "bestvideo[height<=720]+bestaudio/best[height<=720]",
                 "merge_output_format": "mp4",
             }
         else:
             ydl_opts = {
                 **base_opts,
-                "format": "bestaudio[ext=webm][acodec=opus]",
+                "format": "bestaudio/best",
             }
 
         def _download():
+            os.makedirs("downloads", exist_ok=True)
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
                     ydl.download([url])
@@ -151,6 +154,7 @@ class YouTube:
                 except Exception as ex:
                     logger.warning("Download failed: %s", ex)
                     return None
-            return filename
+            candidates = [p for p in glob.glob(f"downloads/{video_id}.*") if not p.endswith(('.part', '.ytdl'))]
+            return candidates[0] if candidates else None
 
         return await asyncio.to_thread(_download)
