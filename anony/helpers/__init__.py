@@ -1,6 +1,6 @@
-# Copyright (c) 2025 AnonymousX1025
+# Copyright (c) 2025 YOUR_GITHUB_USERNAME
 # Licensed under the MIT License.
-# This file is part of AnonXMusic
+# This file is part of Mikasa Music
 
 
 from ._admins import admin_check, can_manage_vc, is_admin, reload_admins

@@ -1,6 +1,6 @@
-# Copyright (c) 2025 AnonymousX1025
+# Copyright (c) 2025 YOUR_GITHUB_USERNAME
 # Licensed under the MIT License.
-# This file is part of AnonXMusic
+# This file is part of Mikasa Music
 
 
 from dataclasses import dataclass

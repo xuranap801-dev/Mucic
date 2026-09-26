@@ -1,6 +1,6 @@
-# Copyright (c) 2025 AnonymousX1025
+# Copyright (c) 2025 YOUR_GITHUB_USERNAME
 # Licensed under the MIT License.
-# This file is part of AnonXMusic
+# This file is part of Mikasa Music
 
 
 from pyrogram import Client
@@ -58,10 +58,11 @@ class Userbot(Client):
         client.username = ub.me.username
         client.mention = ub.me.mention
         self.clients.append(client)
-        try:
-            await ub.join_chat("fallenx")
-        except Exception:
-            pass
+        if config.SUPPORT_CHANNEL and "your_support_" not in config.SUPPORT_CHANNEL:
+            try:
+                await ub.join_chat(config.SUPPORT_CHANNEL)
+            except Exception:
+                pass
         logger.info(f"Assistant {num} started as @{client.username}")
 
     async def boot(self):

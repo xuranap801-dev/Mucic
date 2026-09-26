@@ -1,7 +1,7 @@
-# Copyright (c) 2025 AnonymousX1025
+# Copyright (c) 2025 YOUR_GITHUB_USERNAME
 # Licensed under the MIT License
 
-"""Owner dashboard for AnonXMusic.
+"""Owner dashboard for Mikasa Music.
 
 The dashboard is intentionally owner-only and uses callback buttons instead of
 exposing management actions in normal group chats. User IDs are resolved to
@@ -419,7 +419,7 @@ async def owner_callbacks(_, query: types.CallbackQuery):
             "<blockquote>✦ <b>NOW PLAYING</b>\n"
             "🎧 <a href=\"https://youtube.com\">Song title</a>\n\n"
             "<b>Duration</b> · <code>03:42</code>\n"
-            "<b>Requested by</b> · <a href=\"tg://user?id=123456789\">User</a>\n\n"
+            "<b>Requested by</b> · <i>the requester</i>\n\n"
             "<i>ᴍɪᴋᴀsᴀ ᴍᴜsɪᴄ • keeping your call alive</i></blockquote>\n\n"
             "<b>Queue message</b>\n"
             "<blockquote>✦ <b>ADDED TO QUEUE · #2</b>\n"
