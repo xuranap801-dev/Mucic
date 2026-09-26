@@ -38,8 +38,8 @@ class Userbot(Client):
         Args:
             num (int): The client number to boot (1, 2, or 3).
             ub (Client): The userbot client instance.
-        Raises:
-            SystemExit: If the client fails to send a message in the log group.
+        A log-group message is optional; assistant playback must continue even
+        when the assistant account is not a member of the logger group.
         """
         clients = {
             1: self.one,
@@ -50,8 +50,8 @@ class Userbot(Client):
         await client.start()
         try:
             await client.send_message(config.LOGGER_ID, "Assistant Started")
-        except Exception:
-            raise SystemExit(f"Assistant {num} failed to send message in log group.")
+        except Exception as ex:
+            logger.warning("Assistant %s could not write to the log group: %s", num, ex)
 
         client.id = ub.me.id
         client.name = ub.me.first_name
