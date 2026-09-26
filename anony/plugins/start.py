@@ -50,7 +50,7 @@ async def start(_, message: types.Message):
             await message.reply_text(_text, reply_markup=key, quote=not private)
         else:
             bot_username = (await app.get_me()).username or ""
-            styled_text = f"<blockquote>🦋 {_text}</blockquote>"
+            styled_text = _text
             if not await styled_send_message(message.chat.id, styled_text, styled_start_markup(bot_username, private)):
                 await message.reply_photo(photo=config.START_IMG, caption=_text, reply_markup=key, quote=not private)
     except Exception:

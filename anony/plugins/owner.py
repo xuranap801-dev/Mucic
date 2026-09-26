@@ -26,6 +26,15 @@ PAGE_SIZE = 8
 log = logging.getLogger(__name__)
 pending_assistant_auth: dict[int, dict] = {}
 pending_media: dict[int, str] = {}
+MEDIA_COMMANDS = sorted({
+    "start", "help", "play", "queue", "playing", "pause", "resume", "skip", "next", "replay", "stop", "end",
+    "volume", "shuffle", "remove", "move", "loop", "autoplay", "voteskip", "favorite", "fav", "favorites", "playlist",
+    "history", "profile", "stats", "leaderboard", "topusers", "games", "game", "admin", "dashboard", "dj", "djonly",
+    "setlimit", "cooldown", "config", "logs", "maintenance", "whitelist", "blacklist", "unblacklist", "points", "level",
+    "badges", "rank", "daily", "lock", "unlock", "warn", "mute", "unmute", "ban", "unban", "kick", "slowmode",
+    "antiflood", "linkprotect", "filter", "health", "ping", "alive", "language", "lang", "auth", "unauth", "authlist",
+    "broadcast", "settings", "playmode", "sudolist", "activevc",
+})
 
 
 def _panel_markup() -> types.InlineKeyboardMarkup:
@@ -465,22 +474,31 @@ async def owner_callbacks(_, query: types.CallbackQuery):
             "The phone, OTP, and optional 2FA password are used only in memory and are deleted after processing."
         )
         return await query.answer("Send the assistant phone number")
-    if action == "media":
-        buttons = types.InlineKeyboardMarkup([
-            [types.InlineKeyboardButton("Start", callback_data="owner media_start"),
-             types.InlineKeyboardButton("Help", callback_data="owner media_help")],
-            [types.InlineKeyboardButton("Play", callback_data="owner media_play"),
-             types.InlineKeyboardButton("Queue", callback_data="owner media_queue")],
-            [types.InlineKeyboardButton("Dashboard", callback_data="owner media_dashboard"),
-             types.InlineKeyboardButton("Games", callback_data="owner media_games")],
-            [types.InlineKeyboardButton("Ping", callback_data="owner media_ping"),
-             types.InlineKeyboardButton("Back", callback_data="owner home")],
-            [types.InlineKeyboardButton("Back", callback_data="owner home")],
-        ])
+    if action in {"media", "media_page"}:
+        page = int(data[2]) if action == "media_page" and len(data) > 2 else 0
+        page_size = 12
+        start = page * page_size
+        visible = MEDIA_COMMANDS[start:start + page_size]
+        rows = [
+            [types.InlineKeyboardButton(f"📎 /{command}", callback_data=f"owner media_set {command}")]
+            for command in visible
+        ]
+        nav = []
+        if page > 0:
+            nav.append(types.InlineKeyboardButton("◀️ Previous", callback_data=f"owner media_page {page - 1}"))
+        if start + page_size < len(MEDIA_COMMANDS):
+            nav.append(types.InlineKeyboardButton("Next ▶️", callback_data=f"owner media_page {page + 1}"))
+        if nav:
+            rows.append(nav)
+        rows.append([types.InlineKeyboardButton("Back", callback_data="owner home")])
         return await query.edit_message_text(
-            "<b>Media settings</b>\n\nChoose a command, then send one photo, video, GIF, or sticker.",
-            reply_markup=buttons,
+            f"<b>Media settings</b> · Page {page + 1}\n\nChoose any command, then send one photo, video, GIF, or sticker.\n\nOr use <code>/setmedia command</code> by replying to media.",
+            reply_markup=types.InlineKeyboardMarkup(rows),
         )
+    if action == "media_set":
+        command = data[2] if len(data) > 2 else ""
+        pending_media[query.from_user.id] = command
+        return await query.answer(f"Now send media for /{command}", show_alert=True)
     if action.startswith("media_"):
         command = action[6:]
         pending_media[query.from_user.id] = command
@@ -614,7 +632,7 @@ async def delete_command_media(_, message: types.Message):
 
 @app.on_message(filters.regex(r"^/[A-Za-z0-9_]+(?:@\w+)?(?:\s|$)"))
 async def arbitrary_command_media(_, message: types.Message):
-    if not message.from_user or message.from_user.id != app.owner:
+    if not message.text:
         return
     key = (message.text or "").split()[0].split("@", 1)[0].lstrip("/").lower()
     if key in {"start", "play", "setmedia", "delmedia", "owner", "panel", "dashboard"}:
