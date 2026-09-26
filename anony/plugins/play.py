@@ -3,6 +3,7 @@
 # This file is part of Mikasa Music
 
 
+import asyncio
 from pathlib import Path
 
 from pyrogram import filters, types
@@ -134,7 +135,14 @@ async def play_hndlr(
             file.file_path = fname
         else:
             await sent.edit_text(m.lang["play_downloading"])
-            file.file_path = await yt.download(file.id, video=video)
+            try:
+                file.file_path = await asyncio.wait_for(
+                    yt.download(file.id, video=video), timeout=180
+                )
+            except asyncio.TimeoutError:
+                return await sent.edit_text(
+                    "❌ Tʀᴀᴄᴋ ᴅᴏᴡɴʟᴏᴀᴅ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try another song or URL."
+                )
 
     await anon.play_media(chat_id=m.chat.id, message=sent, media=file)
     if not tracks:
