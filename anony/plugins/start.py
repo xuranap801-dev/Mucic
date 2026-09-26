@@ -5,7 +5,7 @@
 import asyncio
 from pyrogram import enums, filters, types
 
-from anony import app, config, db, lang
+from anony import app, config, db, lang, logger
 from anony.helpers import buttons, utils
 from anony.helpers.styled import send_message as styled_send_message, start_markup as styled_start_markup
 
@@ -54,7 +54,11 @@ async def start(_, message: types.Message):
             if not await styled_send_message(message.chat.id, styled_text, styled_start_markup(bot_username, private)):
                 await message.reply_photo(photo=config.START_IMG, caption=_text, reply_markup=key, quote=not private)
     except Exception:
-        await message.reply_text(_text, reply_markup=key, quote=not private)
+        logger.exception("/start response failed for chat %s", message.chat.id)
+        try:
+            await app.send_message(message.chat.id, _text, reply_markup=key)
+        except Exception:
+            logger.exception("Direct /start fallback failed for chat %s", message.chat.id)
 
     if private:
         if await db.is_user(message.from_user.id):
