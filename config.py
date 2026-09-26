@@ -22,6 +22,7 @@ class Config:
         self.SESSION1 = getenv("SESSION", None)
         self.SESSION2 = getenv("SESSION2", None)
         self.SESSION3 = getenv("SESSION3", None)
+        self.ASSISTANT_SESSION_FILE = getenv("ASSISTANT_SESSION_FILE", "assistant_session.txt")
 
         self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/your_support_channel")
         self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/your_support_chat")

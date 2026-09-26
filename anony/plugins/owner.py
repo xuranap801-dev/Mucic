@@ -11,15 +11,18 @@ MongoDB.
 
 import os
 import platform
+import re
 import time
 
 import psutil
-from pyrogram import enums, filters, types
+from pyrogram import Client, enums, filters, types
+from pyrogram.errors import PasswordHashInvalid, PhoneCodeInvalid, PhoneNumberInvalid, SessionPasswordNeeded
 
 from anony import anon, app, boot, config, db, lang, queue, userbot
 
 
 PAGE_SIZE = 8
+pending_assistant_auth: dict[int, dict] = {}
 
 
 def _panel_markup() -> types.InlineKeyboardMarkup:
@@ -443,10 +446,103 @@ async def owner_callbacks(_, query: types.CallbackQuery):
             + ("\n".join(names) if names else "No assistant is online.")
             + "\n\nCurrent version uses SESSION/SESSION2/SESSION3 from .env."
         )
-        markup = types.InlineKeyboardMarkup([[types.InlineKeyboardButton("Back", callback_data="owner home")]])
+        markup = types.InlineKeyboardMarkup([
+            [types.InlineKeyboardButton("Add assistant session", callback_data="owner addassistant")],
+            [types.InlineKeyboardButton("Back", callback_data="owner home")],
+        ])
         return await query.edit_message_text(text, reply_markup=markup)
+    if action == "addassistant":
+        pending_assistant_auth.pop(query.from_user.id, None)
+        pending_assistant_auth[query.from_user.id] = {"stage": "phone"}
+        await query.message.reply_text(
+            "<b>Add assistant session</b>\n\n"
+            "Send a dedicated Telegram account phone number in international format.\n"
+            "Example: <code>+919876543210</code>\n\n"
+            "The phone, OTP, and optional 2FA password are used only in memory and are deleted after processing."
+        )
+        return await query.answer("Send the assistant phone number")
 
 
 @app.on_callback_query(filters.regex(r"^owner") & ~filters.user(app.owner))
 async def owner_denied(_, query: types.CallbackQuery):
     await query.answer("Owner only panel.", show_alert=True)
+
+
+@app.on_message(filters.private & filters.text & filters.user(app.owner))
+async def assistant_auth_messages(_, message: types.Message):
+    state = pending_assistant_auth.get(message.from_user.id)
+    if not state:
+        return
+    value = (message.text or "").strip()
+    owner_id = message.from_user.id
+    try:
+        await message.delete()
+    except Exception:
+        pass
+    client = state.get("client")
+    try:
+        if state["stage"] == "phone":
+            if not re.fullmatch(r"\+[1-9]\d{7,14}", value):
+                return await app.send_message(owner_id, "Use international format, for example <code>+919876543210</code>.")
+            client = Client(
+                f"assistant-generator-{owner_id}",
+                api_id=config.API_ID,
+                api_hash=config.API_HASH,
+                in_memory=True,
+            )
+            await client.connect()
+            sent = await client.send_code(value)
+            pending_assistant_auth[owner_id] = {
+                "stage": "code",
+                "client": client,
+                "phone": value,
+                "phone_code_hash": sent.phone_code_hash,
+            }
+            return await app.send_message(owner_id, "Telegram OTP sent. Send it here; this message will be deleted.")
+        if state["stage"] == "code":
+            try:
+                await client.sign_in(state["phone"], state["phone_code_hash"], value.replace(" ", ""))
+            except SessionPasswordNeeded:
+                state["stage"] = "2fa"
+                return await app.send_message(owner_id, "Two-step verification is enabled. Send your Telegram 2FA password.")
+        elif state["stage"] == "2fa":
+            await client.check_password(value)
+        else:
+            return
+        session_string = await client.export_session_string()
+        await client.disconnect()
+        pending_assistant_auth.pop(owner_id, None)
+        session_path = config.ASSISTANT_SESSION_FILE
+        with open(session_path, "w", encoding="utf-8") as handle:
+            handle.write(session_string + "\n")
+        try:
+            await app.send_document(
+                owner_id,
+                session_path,
+                caption=(
+                    "<b>Assistant session generated.</b>\n\n"
+                    "Copy its value into Render as <code>SESSION</code>, then redeploy. "
+                    "Never share this file or commit it to GitHub."
+                ),
+            )
+        finally:
+            try:
+                os.remove(session_path)
+            except OSError:
+                pass
+    except (PhoneNumberInvalid, PhoneCodeInvalid, PasswordHashInvalid) as exc:
+        pending_assistant_auth.pop(owner_id, None)
+        if client:
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
+        await app.send_message(owner_id, f"Authentication failed: {type(exc).__name__}. Start again from the owner panel.")
+    except Exception:
+        pending_assistant_auth.pop(owner_id, None)
+        if client:
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
+        await app.send_message(owner_id, "Session generation failed. No credentials were saved.")
