@@ -37,6 +37,9 @@ boot = time.time()
 from anony.core.bot import Bot
 app = Bot()
 
+from anony.core.style_messages import install as install_message_style
+install_message_style()
+
 from anony.core.dir import ensure_dirs
 ensure_dirs()
 
