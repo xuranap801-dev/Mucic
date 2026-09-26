@@ -14,6 +14,7 @@ from pytgcalls.pytgcalls_session import PyTgCallsSession
 from anony import (app, config, db, lang, logger,
                    queue, thumb, userbot, yt)
 from anony.helpers import Media, Track, buttons
+from anony.helpers.styled import edit_reply_markup, playback_markup
 
 
 class TgCall(PyTgCalls):
@@ -100,6 +101,7 @@ class TgCall(PyTgCalls):
                         )
                     else:
                         await message.edit_text(text, reply_markup=keyboard)
+                    await edit_reply_markup(chat_id, message.id, playback_markup(chat_id))
                 except (ChatSendMediaForbidden, ChatSendPhotosForbidden, MessageIdInvalid):
                     if _thumb:
                         sent = await app.send_photo(

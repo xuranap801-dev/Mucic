@@ -7,6 +7,7 @@ from pyrogram import enums, filters, types
 
 from anony import app, config, db, lang
 from anony.helpers import buttons, utils
+from anony.helpers.styled import send_message as styled_send_message, start_markup as styled_start_markup
 
 
 @app.on_message(filters.command(["help"]) & filters.private & ~app.bl_users)
@@ -48,7 +49,10 @@ async def start(_, message: types.Message):
             await message.reply_sticker(custom["file_id"], quote=not private)
             await message.reply_text(_text, reply_markup=key, quote=not private)
         else:
-            await message.reply_photo(photo=config.START_IMG, caption=_text, reply_markup=key, quote=not private)
+            bot_username = (await app.get_me()).username or ""
+            styled_text = f"<blockquote>🦋 {_text}</blockquote>"
+            if not await styled_send_message(message.chat.id, styled_text, styled_start_markup(bot_username, private)):
+                await message.reply_photo(photo=config.START_IMG, caption=_text, reply_markup=key, quote=not private)
     except Exception:
         await message.reply_text(_text, reply_markup=key, quote=not private)
 

@@ -13,6 +13,7 @@ import os
 import platform
 import re
 import time
+import logging
 
 import psutil
 from pyrogram import Client, enums, filters, types
@@ -22,6 +23,7 @@ from anony import anon, app, boot, config, db, lang, queue, userbot
 
 
 PAGE_SIZE = 8
+log = logging.getLogger(__name__)
 pending_assistant_auth: dict[int, dict] = {}
 pending_media: dict[int, str] = {}
 
@@ -579,3 +581,55 @@ async def owner_media_message(_, message: types.Message):
         media_type, file_id = "sticker", message.sticker.file_id
     await db.save_command_media(command, media_type, file_id)
     await message.reply_text(f"✅ /{command} media saved as {media_type}.")
+
+
+@app.on_message(filters.command("setmedia") & filters.private & filters.user(app.owner))
+async def set_command_media(_, message: types.Message):
+    if len(message.command) < 2 or not message.reply_to_message:
+        return await message.reply_text("Reply to a sticker, photo, video, or GIF with /setmedia <command>.")
+    source = message.reply_to_message
+    if source.photo:
+        media_type, file_id = "photo", source.photo.file_id
+    elif source.video:
+        media_type, file_id = "video", source.video.file_id
+    elif source.animation:
+        media_type, file_id = "animation", source.animation.file_id
+    elif source.sticker:
+        media_type, file_id = "sticker", source.sticker.file_id
+    else:
+        return await message.reply_text("Supported media: sticker, photo, video, or GIF.")
+    key = message.command[1].lower().lstrip("/")[:32]
+    await db.save_command_media(key, media_type, file_id)
+    await message.reply_text(f"✅ Media saved for /{key} ({media_type}).")
+
+
+@app.on_message(filters.command("delmedia") & filters.private & filters.user(app.owner))
+async def delete_command_media(_, message: types.Message):
+    if len(message.command) < 2:
+        return await message.reply_text("Usage: /delmedia <command>")
+    key = message.command[1].lower().lstrip("/")[:32]
+    await db.delete_command_media(key)
+    await message.reply_text(f"🗑 Media removed for /{key}.")
+
+
+@app.on_message(filters.regex(r"^/[A-Za-z0-9_]+(?:@\w+)?(?:\s|$)"))
+async def arbitrary_command_media(_, message: types.Message):
+    if not message.from_user or message.from_user.id != app.owner:
+        return
+    key = (message.text or "").split()[0].split("@", 1)[0].lstrip("/").lower()
+    if key in {"start", "play", "setmedia", "delmedia", "owner", "panel", "dashboard"}:
+        return
+    media = await db.get_command_media(key)
+    if not media:
+        return
+    try:
+        if media["media_type"] == "photo":
+            await app.send_photo(message.chat.id, media["file_id"])
+        elif media["media_type"] == "video":
+            await app.send_video(message.chat.id, media["file_id"])
+        elif media["media_type"] == "animation":
+            await app.send_animation(message.chat.id, media["file_id"])
+        elif media["media_type"] == "sticker":
+            await app.send_sticker(message.chat.id, media["file_id"])
+    except Exception:
+        log.exception("command media failed for %s", key)
