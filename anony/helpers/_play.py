@@ -1,6 +1,6 @@
-# Copyright (c) 2025 YOUR_GITHUB_USERNAME
+# Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
-# This file is part of Mikasa Music
+# This file is part of AnonXMusic
 
 
 import asyncio
@@ -15,8 +15,6 @@ def checkUB(play):
     async def wrapper(_, m: types.Message):
         if not m.from_user:
             return await m.reply_text(m.lang["play_user_invalid"])
-
-        status = await m.reply_text("🎧 Checking playback request…")
 
         chat_id = m.chat.id
         if m.chat.type != enums.ChatType.SUPERGROUP:
@@ -53,9 +51,7 @@ def checkUB(play):
         if chat_id not in db.active_calls:
             client = await db.get_client(chat_id)
             try:
-                member = await asyncio.wait_for(
-                    app.get_chat_member(chat_id, client.id), timeout=15
-                )
+                member = await app.get_chat_member(chat_id, client.id)
                 if member.status in [
                     enums.ChatMemberStatus.BANNED,
                     enums.ChatMemberStatus.RESTRICTED,
@@ -79,16 +75,14 @@ def checkUB(play):
                 if m.chat.username:
                     invite_link = m.chat.username
                     try:
-                        await asyncio.wait_for(client.resolve_peer(invite_link), timeout=15)
+                        await client.resolve_peer(invite_link)
                     except Exception:
                         pass
                 else:
                     try:
-                        invite_link = (await asyncio.wait_for(app.get_chat(chat_id), timeout=15)).invite_link
+                        invite_link = (await app.get_chat(chat_id)).invite_link
                         if not invite_link:
-                            invite_link = await asyncio.wait_for(
-                                app.export_chat_invite_link(chat_id), timeout=15
-                            )
+                            invite_link = await app.export_chat_invite_link(chat_id)
                     except errors.ChatAdminRequired:
                         return await m.reply_text(m.lang["admin_required"])
                     except Exception as ex:
@@ -99,7 +93,7 @@ def checkUB(play):
                 umm = await m.reply_text(m.lang["play_invite"].format(app.name))
                 await asyncio.sleep(2)
                 try:
-                    await asyncio.wait_for(client.join_chat(invite_link), timeout=30)
+                    await client.join_chat(invite_link)
                 except errors.UserAlreadyParticipant:
                     pass
                 except errors.InviteRequestSent:
@@ -119,7 +113,7 @@ def checkUB(play):
                     )
 
                 await umm.delete()
-                await asyncio.wait_for(client.resolve_peer(chat_id), timeout=15)
+                await client.resolve_peer(chat_id)
 
         if await db.get_cmd_delete(chat_id):
             try:
@@ -127,6 +121,6 @@ def checkUB(play):
             except Exception:
                 pass
 
-        return await play(_, m, force, m3u8, video, url, status)
+        return await play(_, m, force, m3u8, video, url)
 
     return wrapper

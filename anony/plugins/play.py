@@ -1,9 +1,8 @@
-# Copyright (c) 2025 YOUR_GITHUB_USERNAME
+# Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
-# This file is part of Mikasa Music
+# This file is part of AnonXMusic
 
 
-import asyncio
 from pathlib import Path
 
 from pyrogram import filters, types
@@ -35,23 +34,8 @@ async def play_hndlr(
     m3u8: bool = False,
     video: bool = False,
     url: str = None,
-    status: types.Message = None,
 ) -> None:
-    sent = status or await m.reply_text(m.lang["play_searching"])
-    await sent.edit_text(m.lang["play_searching"])
-    custom = await db.get_command_media("play")
-    if custom:
-        try:
-            if custom.get("media_type") == "photo":
-                await app.send_photo(m.chat.id, custom["file_id"])
-            elif custom.get("media_type") == "video":
-                await app.send_video(m.chat.id, custom["file_id"])
-            elif custom.get("media_type") == "animation":
-                await app.send_animation(m.chat.id, custom["file_id"])
-            elif custom.get("media_type") == "sticker":
-                await app.send_sticker(m.chat.id, custom["file_id"])
-        except Exception:
-            pass
+    sent = await m.reply_text(m.lang["play_searching"])
     file = None
     mention = m.from_user.mention
     media = tg.get_media(m.reply_to_message) if m.reply_to_message else None
@@ -67,12 +51,9 @@ async def play_hndlr(
     elif url:
         if "playlist" in url:
             await sent.edit_text(m.lang["playlist_fetch"])
-            try:
-                tracks = await asyncio.wait_for(
-                    yt.playlist(config.PLAYLIST_LIMIT, mention, url, video), timeout=45
-                )
-            except asyncio.TimeoutError:
-                return await sent.edit_text("❌ Pʟᴀʏʟɪsᴛ ʀᴇǫᴜᴇsᴛ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try one song.")
+            tracks = await yt.playlist(
+                config.PLAYLIST_LIMIT, mention, url, video
+            )
 
             if not tracks:
                 return await sent.edit_text(m.lang["playlist_error"])
@@ -81,10 +62,7 @@ async def play_hndlr(
             tracks.remove(file)
             file.message_id = sent.id
         else:
-            try:
-                file = await asyncio.wait_for(yt.search(url, sent.id, video=video), timeout=30)
-            except asyncio.TimeoutError:
-                return await sent.edit_text("❌ YᴏᴜTᴜʙᴇ sᴇᴀʀᴄʜ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try again.")
+            file = await yt.search(url, sent.id, video=video)
 
         if not file:
             return await sent.edit_text(
@@ -93,10 +71,7 @@ async def play_hndlr(
 
     elif len(m.command) >= 2:
         query = " ".join(m.command[1:])
-        try:
-            file = await asyncio.wait_for(yt.search(query, sent.id, video=video), timeout=30)
-        except asyncio.TimeoutError:
-            return await sent.edit_text("❌ YᴏᴜTᴜʙᴇ sᴇᴀʀᴄʜ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try again.")
+        file = await yt.search(query, sent.id, video=video)
         if not file:
             return await sent.edit_text(
                 m.lang["play_not_found"].format(config.SUPPORT_CHAT)
@@ -146,19 +121,7 @@ async def play_hndlr(
             file.file_path = fname
         else:
             await sent.edit_text(m.lang["play_downloading"])
-            try:
-                file.file_path = await asyncio.wait_for(
-                    yt.download(file.id, video=video), timeout=180
-                )
-            except asyncio.TimeoutError:
-                return await sent.edit_text(
-                    "❌ Tʀᴀᴄᴋ ᴅᴏᴡɴʟᴏᴀᴅ ᴛɪᴍᴇᴅ ᴏᴜᴛ. Please try another song or URL."
-                )
-            if not file.file_path and "sign in to confirm" in yt.last_error.lower():
-                return await sent.edit_text(
-                    "❌ YᴏᴜTᴜʙᴇ ʙʟᴏᴄᴋᴇᴅ ᴛʜɪs ᴅᴏᴡɴʟᴏᴀᴅ.\n\n"
-                    "Owner: add a valid Netscape cookies.txt file URL in Render as <code>COOKIES_URL</code>, then redeploy."
-                )
+            file.file_path = await yt.download(file.id, video=video)
 
     await anon.play_media(chat_id=m.chat.id, message=sent, media=file)
     if not tracks:
@@ -167,17 +130,4 @@ async def play_hndlr(
     await app.send_message(
         chat_id=m.chat.id,
         text=m.lang["playlist_queued"].format(len(tracks)) + added,
-    )
-
-
-@app.on_message(
-    filters.command(["play", "playforce", "vplay", "vplayforce"])
-    & filters.private
-)
-@lang.language()
-async def play_private(_, message: types.Message):
-    await message.reply_text(
-        "🎧 <b>Music playback works in groups only.</b>\n\n"
-        "Add me to a group, make me an admin, add the assistant account, then use:\n"
-        "<code>/play song name</code>"
     )
