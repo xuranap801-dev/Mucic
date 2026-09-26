@@ -157,3 +157,16 @@ async def play_hndlr(
         chat_id=m.chat.id,
         text=m.lang["playlist_queued"].format(len(tracks)) + added,
     )
+
+
+@app.on_message(
+    filters.command(["play", "playforce", "vplay", "vplayforce"])
+    & filters.private
+)
+@lang.language()
+async def play_private(_, message: types.Message):
+    await message.reply_text(
+        "🎧 <b>Music playback works in groups only.</b>\n\n"
+        "Add me to a group, make me an admin, add the assistant account, then use:\n"
+        "<code>/play song name</code>"
+    )
