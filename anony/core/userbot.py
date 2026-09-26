@@ -76,6 +76,23 @@ class Userbot(Client):
         if config.SESSION3:
             await self.boot_client(3, self.three)
 
+    async def add_runtime_session(self, session: str) -> bool:
+        """Start the first available assistant slot from an owner-generated session."""
+        for num, key in ((1, "one"), (2, "two"), (3, "three")):
+            slot = getattr(self, key)
+            if any(client is slot for client in self.clients):
+                continue
+            slot = Client(
+                name=f"AnonyUB{num}",
+                api_id=config.API_ID,
+                api_hash=config.API_HASH,
+                session_string=session,
+            )
+            setattr(self, key, slot)
+            await self.boot_client(num, slot)
+            return True
+        return False
+
     async def exit(self):
         """
         Asynchronously stops the assistants.

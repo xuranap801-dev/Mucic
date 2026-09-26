@@ -26,6 +26,10 @@ async def main():
     await db.connect()
     await app.boot()
     await userbot.boot()
+    if not userbot.clients:
+        saved_session = await db.get_assistant_session()
+        if saved_session:
+            await userbot.add_runtime_session(saved_session)
     await anon.boot()
     await thumb.start()
 

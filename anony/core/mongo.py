@@ -63,6 +63,23 @@ class MongoDB:
         await self.mongo.close()
         logger.info("Database connection closed.")
 
+    async def save_assistant_session(self, owner_id: int, session_string: str) -> None:
+        """Store the owner-generated assistant session for the next restart."""
+        await self.assistantdb.update_one(
+            {"_id": "owner_session"},
+            {"$set": {"owner_id": owner_id, "session": session_string}},
+            upsert=True,
+        )
+
+    async def get_assistant_session(self) -> str | None:
+        """Return the persisted owner-generated assistant session, if present."""
+        doc = await self.assistantdb.find_one({"_id": "owner_session"})
+        return doc.get("session") if doc else None
+
+    async def delete_assistant_session(self) -> None:
+        """Delete the persisted owner-generated assistant session."""
+        await self.assistantdb.delete_one({"_id": "owner_session"})
+
     # CACHE
     async def get_call(self, chat_id: int) -> bool:
         return chat_id in self.active_calls

@@ -512,24 +512,15 @@ async def assistant_auth_messages(_, message: types.Message):
         session_string = await client.export_session_string()
         await client.disconnect()
         pending_assistant_auth.pop(owner_id, None)
-        session_path = config.ASSISTANT_SESSION_FILE
-        with open(session_path, "w", encoding="utf-8") as handle:
-            handle.write(session_string + "\n")
-        try:
-            await app.send_document(
-                owner_id,
-                session_path,
-                caption=(
-                    "<b>Assistant session generated.</b>\n\n"
-                    "Copy its value into Render as <code>SESSION</code>, then redeploy. "
-                    "Never share this file or commit it to GitHub."
-                ),
-            )
-        finally:
-            try:
-                os.remove(session_path)
-            except OSError:
-                pass
+        if not await userbot.add_runtime_session(session_string):
+            return await app.send_message(owner_id, "All assistant slots are already active. Session was not saved.")
+        await db.save_assistant_session(owner_id, session_string)
+        await app.send_message(
+            owner_id,
+            "<b>Assistant added successfully.</b>\n\n"
+            "It is active now and will load automatically after the next restart. "
+            "Phone, OTP, and 2FA password were not saved.",
+        )
     except (PhoneNumberInvalid, PhoneCodeInvalid, PasswordHashInvalid) as exc:
         pending_assistant_auth.pop(owner_id, None)
         if client:
