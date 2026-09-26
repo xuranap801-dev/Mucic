@@ -16,6 +16,8 @@ def checkUB(play):
         if not m.from_user:
             return await m.reply_text(m.lang["play_user_invalid"])
 
+        status = await m.reply_text("🎧 Checking playback request…")
+
         chat_id = m.chat.id
         if m.chat.type != enums.ChatType.SUPERGROUP:
             await m.reply_text(m.lang["play_chat_invalid"])
@@ -125,6 +127,6 @@ def checkUB(play):
             except Exception:
                 pass
 
-        return await play(_, m, force, m3u8, video, url)
+        return await play(_, m, force, m3u8, video, url, status)
 
     return wrapper

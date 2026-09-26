@@ -35,8 +35,10 @@ async def play_hndlr(
     m3u8: bool = False,
     video: bool = False,
     url: str = None,
+    status: types.Message = None,
 ) -> None:
-    sent = await m.reply_text(m.lang["play_searching"])
+    sent = status or await m.reply_text(m.lang["play_searching"])
+    await sent.edit_text(m.lang["play_searching"])
     custom = await db.get_command_media("play")
     if custom:
         try:
