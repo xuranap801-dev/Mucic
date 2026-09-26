@@ -143,11 +143,14 @@ class Inline:
                 )
             ],
             [self.ikb(text=lang["help"], callback_data="help")],
-            [
-                self.ikb(text=lang["support"], url=config.SUPPORT_CHAT),
-                self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL),
-            ],
         ]
+        support_row = []
+        if config.SUPPORT_CHAT:
+            support_row.append(self.ikb(text=lang["support"], url=config.SUPPORT_CHAT))
+        if config.SUPPORT_CHANNEL:
+            support_row.append(self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL))
+        if support_row:
+            rows.append(support_row)
         if private:
             rows += [
                 [

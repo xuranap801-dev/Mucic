@@ -31,5 +31,5 @@ async def _ping(_, m: types.Message):
                 await anon.ping(),
             )
         ),
-        reply_markup=buttons.ping_markup(m.lang["support"]),
+        reply_markup=buttons.ping_markup(m.lang["support"]) if config.SUPPORT_CHAT else None,
     )

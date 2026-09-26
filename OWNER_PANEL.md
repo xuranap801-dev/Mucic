@@ -14,6 +14,7 @@ The owner can open the private inline dashboard with `/owner`, `/panel`, or `/da
 - **Health**: shows process uptime, CPU/RAM/disk usage, platform/Python versions, MongoDB ping status, and assistant ping.
 - **Message previews**: shows sample `Mikasa Music` start, now-playing, queue, and formatting previews using Telegram HTML styles such as bold, italic, underline, monospace, and blockquotes.
 - **Games Zone**: `/games` or `/game` opens the supplied 16-game catalog with virtual-coin balances and a leaderboard. It has no real-money betting, deposits, withdrawals, or payment integration.
+- **Moderation**: group admins can use `/ban`, `/unban`, `/kick`, `/mute`, `/unmute`, `/lock`, and `/unlock` by replying to a user or providing a username/user ID.
 
 The display name defaults to `ᴍɪᴋᴀsᴀ ᴍᴜsɪᴄ` and can be changed through the `BOT_NAME` environment variable. Telegram's actual bot username remains the username configured through BotFather.
 
